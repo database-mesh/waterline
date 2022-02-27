@@ -15,13 +15,41 @@
 package main
 
 import (
+	"flag"
+	"os"
+
+	"github.com/database-mesh/waterline/pkg/server"
+	"github.com/database-mesh/waterline/pkg/server/config"
 	"github.com/database-mesh/waterline/pkg/version"
+	"github.com/mlycore/log"
 )
 
 const (
 	ProjectName = "Waterline"
 )
 
+var (
+	printVersion bool
+	conf         = &config.Config{}
+)
+
+func init() {
+	flag.BoolVar(&printVersion, "version", false, "print version information")
+	flag.StringVar(&conf.CRI, "cri", "docker", "cluster runtime")
+
+	flag.Parse()
+}
+
 func main() {
 	version.PrintVersionInfo(ProjectName)
+	if printVersion {
+		os.Exit(0)
+	}
+
+	s, err := server.New(conf)
+	if err != nil {
+		log.Fatalf("new server error")
+	}
+
+	s.Run()
 }
