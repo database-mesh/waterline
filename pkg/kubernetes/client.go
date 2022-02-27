@@ -32,7 +32,7 @@ type Client struct {
 var DefaultClient *Client
 var once sync.Once
 
-func NewClientInCluster() *Client {
+func NewClientInCluster() (*Client, error) {
 	once.Do(func() {
 		config, err := rest.InClusterConfig()
 		if err != nil {
@@ -48,5 +48,5 @@ func NewClientInCluster() *Client {
 			Interface: clientset,
 		}
 	})
-	return DefaultClient
+	return DefaultClient, nil
 }
