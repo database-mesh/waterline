@@ -1,0 +1,14 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://github.com"
+    },
+    {
+      "pattern": "url"
+    }
+  ],
+  "aliveStatusCodes": [200, 403, 500, 502, 503]
+}
