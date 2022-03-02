@@ -1,0 +1,62 @@
+name: Integration Test
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  run:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          # Must use at least depth 2!
+          fetch-depth: 2
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.2.0
+      - uses: actions/setup-python@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.17'
+      - name: Build Waterline Build Env
+        if: ${{ github.event.pull_request }}
+        env:
+          IMAGE_BUILD_ENV_BUILD: ${{ contains(github.event.pull_request.labels.*.name, 'rebuild-build-env-image') }}
+        run: |
+          if [ "${IMAGE_BUILD_ENV_BUILD}" = "true" ] ; then
+            export IMAGE_BUILD_ENV_BUILD=1;
+          else
+            export IMAGE_BUILD_ENV_BUILD=0;
+          fi
+
+          make image-build-env
+
+      - name: Build Waterline Dev Env
+        if: ${{ github.event.pull_request }}
+        env:
+          IMAGE_DEV_ENV_BUILD: ${{ contains(github.event.pull_request.labels.*.name, 'rebuild-dev-env-image') }}
+        run: |
+          if [ "${IMAGE_DEV_ENV_BUILD}" = "true" ] ; then
+            export IMAGE_DEV_ENV_BUILD=1;
+          else
+            export IMAGE_DEV_ENV_BUILD=0;
+          fi
+
+          make image-dev-env
+
+      - name: Install Waterline 
+        run: |
+          export CLUSTER="chart-testing"
+          hack/local-up-waterlinet.sh
+          sleep 5
+      - name: Install localstack && aws client
+        run: |
+          helm repo add localstack-repo http://helm.localstack.cloud
+          helm upgrade --install localstack localstack-repo/localstack --version 0.1.2
+          pip install awscli
+
+      - name: Run integration test
+        run: |
+          bash test/integration_test/run.sh
