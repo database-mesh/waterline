@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-|
-import (                                                                  | func init() {
-	"k8s.io/apimachinery/pkg/runtime/schema"                              |     utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	"sigs.k8s.io/controller-runtime/pkg/scheme"                           |
-)                                                                         |     utilruntime.Must(databasemeshiov1alpha1.AddToScheme(scheme))
-																		  |     //+kubebuilder:scaffold:scheme
-var (                                                                     | }
-	// GroupVersion is group version used to register these objects       |
-	GroupVersion = schema.GroupVersion{Group: "database-mesh.io",         | func main() {
-Version: "v1alpha1"}                                                      |     var metricsAddr string
-																		  |     var enableLeaderElection bool
-	// SchemeBuilder is used to add go types to the GroupVersionKind      |     var probeAddr string
-scheme                                                                    |     flag.StringVar(&metricsAddr, "metrics-bind-address", ":8180", "The
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}           | address the metric endpoint binds to.")
-																		  |     flag.StringVar(&probeAddr, "health-probe-bind-address", ":8181", "The
-	// AddToScheme adds the types in this group-version to the given      | address the probe endpoint binds to.")
-scheme.                                                                   |     flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-	AddToScheme = SchemeBuilder.AddToScheme                               |         "Enable leader election for controller manager. "+
+package v1alpha1
+
+import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
+)
+
+var (
+	// GroupVersion is group version used to register these objects
+	GroupVersion = schema.GroupVersion{Group: "database-mesh.io", Version: "v1alpha1"}
+
+	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+
+	// AddToScheme adds the types in this group-version to the given scheme.
+	AddToScheme = SchemeBuilder.AddToScheme
 )
