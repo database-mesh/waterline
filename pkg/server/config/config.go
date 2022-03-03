@@ -15,5 +15,6 @@
 package config
 
 type Config struct {
-	CRI string
+	CRI        string
+	KubeConfig string
 }

@@ -15,12 +15,31 @@
 package server
 
 import (
+	"github.com/database-mesh/waterline/api/v1alpha1"
 	"github.com/database-mesh/waterline/pkg/cri"
 	kube "github.com/database-mesh/waterline/pkg/kubernetes"
+	"github.com/database-mesh/waterline/pkg/kubernetes/controllers"
+	"github.com/database-mesh/waterline/pkg/kubernetes/watcher"
+	"github.com/database-mesh/waterline/pkg/manager"
 	"github.com/database-mesh/waterline/pkg/server/config"
-	"k8s.io/client-go/kubernetes"
+
+	"github.com/mlycore/log"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
+
+var (
+	scheme = runtime.NewScheme()
+)
+
+func init() {
+	_ = v1alpha1.AddToScheme(scheme)
+	_ = clientgoscheme.AddToScheme(scheme)
+}
 
 type Server struct {
 	KubernetesClient       kubernetes.Interface
@@ -33,23 +52,61 @@ func New(conf *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	kc, err := kube.NewClientInCluster()
+	kc, err := kube.NewClientInCluster(conf.KubeConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		ContainerRuntimeClient: cr
-		KubernetesClient: kc,
-		}, nil
+		ContainerRuntimeClient: cr,
+		KubernetesClient:       kc,
+	}, nil
 }
 
-func (s Server) Run() {
+func (s *Server) Run() error {
+	//FIXME: integration kube restconfig with watcher
+	// var metricsAddr string
+	var enableLeaderElection bool
+	// var probeAddr string
+
+	mgr, err := controllers.NewManager(ctrl.GetConfigOrDie(), &ctrl.Options{
+		Scheme:                 scheme,
+		MetricsBindAddress:     ":8280",
+		Port:                   9444,
+		HealthProbeBindAddress: ":8281",
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "cb843f1f.my.domain",
+	})
+	if err != nil {
+		return err
+	}
+	w, err := watcher.NewPodWatcher(s.KubernetesClient)
+	if err != nil {
+		return err
+	}
+	manager := &manager.Manager{
+		Pod: w,
+		Mgr: mgr,
+	}
 	var eg errgroup.Group
+
+	// apply to Pod
 	eg.Go(func() error {
-		log.Infof("starting watching kubernetes")
-		// TODO: add kubernetes crd watching
+		log.Infof("starting controllers")
+		if err := manager.Bootstrap(); err != nil {
+			return errors.Wrap(err, "start controllers")
+		}
 		return nil
 	})
+
+	// remove from Pod
+	eg.Go(func() error {
+		log.Infof("starting watching kubernetes")
+		if err := manager.WatchAndHandle(); err != nil {
+			return errors.Wrap(err, "start pod watcher")
+		}
+		return nil
+	})
+
 	return eg.Wait()
 }
