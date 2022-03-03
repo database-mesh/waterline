@@ -42,7 +42,7 @@ func (c DockerClient) GetPidFromContainer(ctx context.Context, containerId strin
 	}
 
 	if con.State.Pid == 0 || con.State.Dead {
-		return 0, errors.New(fmt.Sprintf("unexpected container status %s"), con.State.Status)
+		return 0, errors.New(fmt.Sprintf("unexpected container status %s", con.State.Status))
 	}
 
 	return uint32(con.State.Pid), nil
