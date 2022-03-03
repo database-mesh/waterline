@@ -15,7 +15,9 @@
 package tc
 
 func renderCommand() ([]string, error) {
-
+	return []string{}, nil
 }
 
-func 
+func ExecuteCmd(cmds []string) error {
+	return nil
+}
