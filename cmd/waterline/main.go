@@ -36,8 +36,9 @@ var (
 func init() {
 	flag.BoolVar(&printVersion, "version", false, "print version information")
 	flag.StringVar(&conf.CRI, "cri", "docker", "cluster runtime")
-	// FIXME: kubeconfig should be integrated with comtroller manager
-	flag.StringVar(&conf.KubeConfig, "kubecfg", "", "kubeconfig path")
+
+	// NOTE: the kubeconfig has been registered into flags automatically
+	// flag.StringVar(&kubeconfig, "kubeconfig", "", "Paths to a kubeconfig. Only required if out-of-cluster.")
 
 	flag.Parse()
 }
