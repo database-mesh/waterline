@@ -17,7 +17,6 @@ package server
 import (
 	"github.com/database-mesh/waterline/api/v1alpha1"
 	"github.com/database-mesh/waterline/pkg/cri"
-	kube "github.com/database-mesh/waterline/pkg/kubernetes"
 	"github.com/database-mesh/waterline/pkg/kubernetes/controllers"
 	"github.com/database-mesh/waterline/pkg/kubernetes/watcher"
 	"github.com/database-mesh/waterline/pkg/manager"
@@ -52,7 +51,8 @@ func New(conf *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	kc, err := kube.NewClientInCluster(conf.KubeConfig)
+	kcfg := ctrl.GetConfigOrDie()
+	kc, err := kubernetes.NewForConfig(kcfg)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,6 @@ func New(conf *config.Config) (*Server, error) {
 }
 
 func (s *Server) Run() error {
-	//FIXME: integration kube restconfig with watcher
 	// var metricsAddr string
 	var enableLeaderElection bool
 	// var probeAddr string
