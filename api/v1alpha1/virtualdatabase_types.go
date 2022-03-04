@@ -40,23 +40,26 @@ type DatabaseSource struct {
 	Credential string `json:"credentialName"`
 }
 
-type SQLTrafficQoS string
-
 // VirtualDatabaseSpec defines the desired state of VirtualDatabase
 type VirtualDatabaseSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of VirtualDatabase. Edit virtualdatabase_types.go to remove/update
-	Server VirtualDatabaseServer `json:"server"`
-	QoS    SQLTrafficQoS         `json:"qos"`
+	Selector map[string]string     `json:"selector"`
+	Server   VirtualDatabaseServer `json:"server"`
+	QoS      string                `json:"qos"`
 }
 
 // VirtualDatabaseStatus defines the observed state of VirtualDatabase
 type VirtualDatabaseStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	PodList            []string `json:"podList"`
+	ObservedGeneration int64    `json:"observedGeneration,omitempty"`
 }
+
+type Pod string
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -77,4 +80,8 @@ type VirtualDatabaseList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []VirtualDatabase `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&VirtualDatabase{}, &VirtualDatabaseList{})
 }

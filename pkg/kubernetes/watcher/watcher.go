@@ -11,13 +11,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package watcher
 
-package tc
+import (
+	"context"
 
-func renderCommand() ([]string, error) {
-	return []string{}, nil
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+)
+
+type PodWatcher struct {
+	Core watch.Interface
 }
 
-func ExecuteCmd(cmds []string) error {
-	return nil
+func NewPodWatcher(c kubernetes.Interface) (*PodWatcher, error) {
+	watcher, err := c.CoreV1().Pods("").Watch(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &PodWatcher{
+		Core: watcher,
+	}, nil
+
 }

@@ -53,6 +53,7 @@ func (r *SQLTrafficQoS) ValidateCreate() error {
 	sqltrafficqoslog.Info("validate create", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object creation.
+
 	return nil
 }
 

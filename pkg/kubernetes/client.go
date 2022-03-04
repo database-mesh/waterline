@@ -15,11 +15,13 @@
 package kubernetes
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/mlycore/log"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Client is built upon the real Kubernetes client-go
@@ -32,20 +34,35 @@ type Client struct {
 var DefaultClient *Client
 var once sync.Once
 
-func NewClientInCluster() (*Client, error) {
+func NewClientInCluster(kubeconfig string) (*Client, error) {
 	once.Do(func() {
-		config, err := rest.InClusterConfig()
-		if err != nil {
-			log.Fatalf("read incluster config error: %s", err)
-		}
-		// creates the clientset
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			log.Fatalf("new client from incluster config error: %s", err)
-		}
-		DefaultClient = &Client{
-			Config:    config,
-			Interface: clientset,
+		if !strings.EqualFold(kubeconfig, "") {
+			config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+			if err != nil {
+				log.Fatalf("build config from kubeconfig error: %s", err)
+			}
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				log.Fatalf("new client from kubeconfig error: %s", err)
+			}
+			DefaultClient = &Client{
+				Config:    config,
+				Interface: clientset,
+			}
+		} else {
+			config, err := rest.InClusterConfig()
+			if err != nil {
+				log.Fatalf("read incluster config error: %s", err)
+			}
+			// creates the clientset
+			clientset, err := kubernetes.NewForConfig(config)
+			if err != nil {
+				log.Fatalf("new client from incluster config error: %s", err)
+			}
+			DefaultClient = &Client{
+				Config:    config,
+				Interface: clientset,
+			}
 		}
 	})
 	return DefaultClient, nil

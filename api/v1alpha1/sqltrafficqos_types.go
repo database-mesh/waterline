@@ -83,3 +83,7 @@ type SQLTrafficQoSList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []SQLTrafficQoS `json:"items"`
 }
+
+func init() {
+	SchemeBuilder.Register(&SQLTrafficQoS{}, &SQLTrafficQoSList{})
+}

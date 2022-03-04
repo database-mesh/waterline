@@ -12,4 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubernetes
+package controllers
+
+import (
+
+	// "github.com/database-mesh/waterline/pkg/manager"
+
+	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+)
+
+func NewManager(cfg *rest.Config, options *ctrl.Options) (manager.Manager, error) {
+	//TODO: add extra configurations
+	return ctrl.NewManager(cfg, *options)
+}
