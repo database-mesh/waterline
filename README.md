@@ -11,6 +11,8 @@ Waterline is a Database Mesh project. It provides QoS for SQL traffic in a cloud
 
 ## Features
 
+Different applications in production clusters are always applied with different priorities. For better SLA purpose, we treat application as different QoS class. At present, Kubernetes provides CPU and Memory QoS, and community has contributed some design for network QoS, such as ingress and egress traffic bandwidth. Waterline could provider a protocol-specific network QoS solution with the help of Traffic Control and eBPF.
+
 ## Community & Support
 
 :link: [GitHub Issues](https://github.com/database-mesh/waterline/issues). Best for: larger systemic questions/bug reports or anything development related.
