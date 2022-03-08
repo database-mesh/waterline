@@ -37,11 +37,8 @@ const (
 )
 
 type TrafficQoSGroup struct {
-	Parent        string `json:"parent"`
-	NetworkDevice string `json:"networkDevice"`
-	ClassId       string `json:"classId"`
-	Rate          string `json:"rate"`
-	Ceil          string `json:"ceil"`
+	Rate string `json:"rate"`
+	Ceil string `json:"ceil",omitempty`
 }
 
 // SQLTrafficQoSSpec defines the desired state of SQLTrafficQoS
@@ -50,9 +47,10 @@ type SQLTrafficQoSSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of SQLTrafficQoS. Edit sqltrafficqos_types.go to remove/update
-	QoSClass QoSClassType       `json:"qosClass,omitempty"`
-	Strategy TrafficQoSStrategy `json:"strategy",omitempty`
-	Groups   []TrafficQoSGroup  `json:"groups"`
+	NetworkDevice string             `json:"networkDevice"`
+	QoSClass      QoSClassType       `json:"qosClass,omitempty"`
+	Strategy      TrafficQoSStrategy `json:"strategy",omitempty`
+	Groups        []TrafficQoSGroup  `json:"groups"`
 }
 
 // SQLTrafficQoSStatus defines the observed state of SQLTrafficQoS
