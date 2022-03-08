@@ -46,9 +46,10 @@ type VirtualDatabaseSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of VirtualDatabase. Edit virtualdatabase_types.go to remove/update
-	Selector map[string]string     `json:"selector"`
-	Server   VirtualDatabaseServer `json:"server"`
-	QoS      string                `json:"qos"`
+	Selector  map[string]string     `json:"selector"`
+	Server    VirtualDatabaseServer `json:"server"`
+	QoS       string                `json:"qos"`
+	Bandwidth string                `json:"bandwidth`
 }
 
 // VirtualDatabaseStatus defines the observed state of VirtualDatabase
