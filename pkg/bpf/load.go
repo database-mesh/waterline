@@ -73,13 +73,13 @@ func loadSockFilter(tcPkt *ebpf.Map) error {
 	for {
 		evt, query, err := readRecord(objs, reader)
 		if err != nil {
-			log.Warnln(err)
+			log.Infoln(err)
 			continue
 		}
 
 		evt.ClassId = calcQos(query)
 		if err := tcPkt.Update(uint32(0), &evt, ebpf.UpdateAny); err != nil {
-			log.Warnln(err)
+			log.Infoln(err)
 		}
 	}
 }
