@@ -16,7 +16,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -26,7 +25,6 @@ import (
 	"github.com/mlycore/log"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
-	"github.com/database-mesh/waterline/pkg/tc"
 )
 
 // SQLTrafficQoSReconciler reconciles a SQLTrafficQoS object
@@ -78,19 +76,8 @@ func (r *SQLTrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *SQLTrafficQoSReconciler) SetTcs(ctx context.Context, qos *v1alpha1.SQLTrafficQoS) error {
-	cmds := []string{}
-	for _, r := range qos.Spec.Groups {
-		cmd := makeTcCmd(r.Parent, r.NetworkDevice, r.ClassId, r.Rate, r.Ceil)
-		cmds = append(cmds, cmd)
-	}
-
-	return tc.ExecuteCmd(cmds)
-}
-
-// tc class add dev ${NIC} parent  1:0 classid 1:1 htb rate "100mbit"
-// tc class add dev ${NIC} parent  1:1 classid 1:30 htb rate "500kbit" ceil "500kbit"
-func makeTcCmd(networkDeviceId, parent, classId, rate, ceil string) string {
-	return fmt.Sprintf("tc class add dev %s parent %s classid %s htb rate %s ceil %s", networkDeviceId, parent, classId, rate, ceil)
+	//TODO: add TC operations
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
