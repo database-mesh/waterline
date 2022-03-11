@@ -9,26 +9,26 @@
 
 // bpf_elf map definition from https://github.com/shemminger/iproute2/blob/main/include/bpf_elf.h
 struct bpf_elf_map {
-        unsigned int type;
-        unsigned int size_key;
-        unsigned int size_value;
-        unsigned int max_elem;
-        unsigned int flags;
-        unsigned int id;
-        unsigned int pinning;
-        unsigned int inner_id;
-        unsigned int inner_idx;
+    unsigned int type;
+    unsigned int size_key;
+    unsigned int size_value;
+    unsigned int max_elem;
+    unsigned int flags;
+    unsigned int id;
+    unsigned int pinning;
+    unsigned int inner_id;
+    unsigned int inner_idx;
 };
 
 struct event {
-	__u8 seq;
+    __u8 seq;
     __u16 sport;
     __u16 dport;
     __u32 saddr;
     __u32 daddr;
-	__u32 my_pkt_len;
-	__u32 payload_offset;
-	__u32 class_id;
+    __u32 my_pkt_len;
+    __u32 payload_offset;
+    __u32 class_id;
 };
 
 struct bpf_elf_map SEC("maps") my_pkt = {
