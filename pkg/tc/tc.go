@@ -21,64 +21,41 @@ import (
 	"sort"
 )
 
-type TcAct struct {
-	linkIdx        int
-	attrs          netlink.QdiscAttrs
-	qdisc          netlink.Qdisc
+type Shaper struct {
+	qos            v1alpha1.SQLTrafficQoS
+	link           netlink.Link
 	totalBandWidth string
 }
 
-func NewTcAct(iface string, totalBandWidth string) (*TcAct, error) {
-	link, err := netlink.LinkByName(iface)
+func NewTcShaper(qos v1alpha1.SQLTrafficQoS, totalBandWidth string) (*Shaper, error) {
+	link, err := netlink.LinkByName(qos.Spec.NetworkDevice)
 	if err != nil {
 		return nil, err
 	}
 
-	attrs := netlink.QdiscAttrs{
-		LinkIndex: link.Attrs().Index,
-		Handle:    netlink.MakeHandle(1, 0),
-		Parent:    netlink.HANDLE_ROOT,
-	}
-
-	return &TcAct{
-		linkIdx:        link.Attrs().Index,
-		attrs:          attrs,
+	return &Shaper{
+		qos:            qos,
+		link:           link,
 		totalBandWidth: totalBandWidth,
 	}, nil
 }
 
-func (t *TcAct) AddHtbQdisc() error {
-	t.qdisc = netlink.NewHtb(t.attrs)
-	return netlink.QdiscAdd(t.qdisc)
-}
-
-func (t *TcAct) DeleteHtbQdisc() error {
-	return netlink.QdiscDel(t.qdisc)
-}
-
-func (t *TcAct) AddClasses(qos v1alpha1.SQLTrafficQoS) error {
-	rules := qos.Spec.Groups
-	// sort by classid or rate
-	sort.Slice(rules, func(i, j int) bool {
-		return rules[i].ClassId < rules[j].ClassId
-	})
-
-	sort.Slice(rules, func(i, j int) bool {
-		return rules[i].Rate < rules[j].Rate
-	})
-
-	for idx, rule := range rules {
-		if err := t.addClass(idx, rule); err != nil {
-			return err
-		}
+// add htb qidsc, called by AddClasses
+func (t *Shaper) addHtbQdisc() error {
+	attrs := netlink.QdiscAttrs{
+		LinkIndex: t.link.Attrs().Index,
+		Handle:    netlink.MakeHandle(1, 0),
+		Parent:    netlink.HANDLE_ROOT,
 	}
 
-	return nil
+	qdisc := netlink.NewHtb(attrs)
+	return netlink.QdiscReplace(qdisc)
 }
 
-func (t *TcAct) addRootHandle() error {
-	attrs := netlink.QdiscAttrs{
-		LinkIndex: t.linkIdx,
+// add htb root handle, called by AddClasses
+func (t *Shaper) addRootHandle() error {
+	attrs := netlink.ClassAttrs{
+		LinkIndex: t.link.Attrs().Index,
 		Parent:    netlink.MakeHandle(1, 0),
 		Handle:    netlink.MakeHandle(1, 1),
 	}
@@ -93,12 +70,37 @@ func (t *TcAct) addRootHandle() error {
 	}
 
 	class := netlink.NewHtbClass(attrs, htbClassAttrs)
-	return netlink.ClassAdd(class)
+	return netlink.ClassReplace(class)
 }
 
-func (t *TcAct) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
+func (t *Shaper) AddClasses() error {
+	if err := t.addHtbQdisc(); err != nil {
+		return err
+	}
+
+	if err := t.addRootHandle(); err != nil {
+		return err
+	}
+
+	rules := t.qos.Spec.Groups
+	// sort by rate
+	sort.Slice(rules, func(i, j int) bool {
+		return rules[i].Rate < rules[j].Rate
+	})
+
+	for idx, rule := range rules {
+		if err := t.addClass(idx, rule); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// add htb class
+func (t *Shaper) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
 	attrs := netlink.ClassAttrs{
-		LinkIndex: t.linkIdx,
+		LinkIndex: t.link.Attrs().Index,
 		Parent:    netlink.MakeHandle(1, 1),
 		//exclude 0, 1
 		Handle: netlink.MakeHandle(1, uint16(idx+2)),
@@ -113,15 +115,83 @@ func (t *TcAct) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
 		Rate: uint64(rateValue.Value()),
 	}
 
-	if rule.Ceil != "" {
-		ceilValue, err := resource.ParseQuantity(rule.Ceil)
-		if err != nil {
-			return err
+	switch t.qos.Spec.QoSClass {
+	case v1alpha1.QoSClassGuaranteed:
+		if rule.Ceil == "" {
+			ceilValue, err := resource.ParseQuantity(rule.Rate)
+			if err != nil {
+				return err
+			}
+			htbClassAttrs.Ceil = uint64(ceilValue.Value())
 		}
-
-		htbClassAttrs.Ceil = uint64(ceilValue.Value())
+	case v1alpha1.QoSClassBurstable:
+		if rule.Ceil == "" {
+			htbClassAttrs.Ceil = uint64(float64(rateValue.Value()) * 1.5)
+		}
+	case v1alpha1.QoSClassBestEffort:
+		return nil
 	}
 
-	class := netlink.NewHtbClass(attrs, htbclassattrs)
-	return netlink.ClassAdd(class)
+	class := netlink.NewHtbClass(attrs, htbClassAttrs)
+	return netlink.ClassReplace(class)
+}
+
+// add qdisc clsact
+func (t *Shaper) addClsact() error {
+	attrs := netlink.QdiscAttrs{
+		LinkIndex: t.link.Attrs().Index,
+		Handle:    netlink.MakeHandle(0xffff, 0),
+		Parent:    netlink.HANDLE_CLSACT,
+	}
+
+	qdisc := netlink.GenericQdisc{
+		QdiscAttrs: attrs,
+		QdiscType:  "clsact",
+	}
+
+	return netlink.QdiscReplace(&qdisc)
+}
+
+// match qdisc func
+type matchQdiscFunc = func(qdisc netlink.Qdisc) bool
+
+// delete matched qdisc
+func (t *Shaper) delQdisc(f matchQdiscFunc) error {
+	qdiscs, err := netlink.QdiscList(t.link)
+
+	if err != nil {
+		return err
+	}
+
+	for _, v := range qdiscs {
+		if f(v) {
+			return netlink.QdiscDel(v)
+		}
+	}
+
+	return nil
+}
+
+// match class func
+type matchClassFunc = func(class netlink.Class) bool
+
+// delete matched class
+func (t *Shaper) delClass(f matchClassFunc) error {
+	classes, err := t.ListClass()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range classes {
+		if f(v) {
+			return netlink.ClassDel(v)
+		}
+	}
+
+	return nil
+}
+
+// ListClass list class
+func (t *Shaper) ListClass() ([]netlink.Class, error) {
+	return netlink.ClassList(t.link, netlink.MakeHandle(1, 0))
 }
