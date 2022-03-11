@@ -37,7 +37,7 @@ struct bpf_elf_map SEC("maps") my_pkt = {
 	.size_value     = sizeof(struct event),
 	.max_entries    = 1,
 	// pin path default is /sys/fs/bpf/tc/globals/my_pkt
-    // waterline can write qos rule to my_pkt by pin path
+	// waterline can write qos rule to my_pkt by pin path
 	.pinning        = 2,
 };
 
