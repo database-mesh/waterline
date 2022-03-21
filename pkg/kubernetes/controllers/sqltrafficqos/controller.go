@@ -66,6 +66,9 @@ func (r *SQLTrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Read SQLTrafficQoS for basic QoS class up.
 	// Read VirtualDatabase for application-level QoS after a Pod was scheduled on this Node
 
+	//TODO: all rules should be removed once the resource was deleted
+	//TODO: is there an exception when more than one resource was created
+
 	shaper, err := tc.NewTcShaper(*obj, "1000M")
 	if err != nil {
 		log.Errorf("get shaper error: %s", err)

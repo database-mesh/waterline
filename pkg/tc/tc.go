@@ -89,6 +89,7 @@ func (t *Shaper) AddClasses() error {
 		return rules[i].Rate < rules[j].Rate
 	})
 
+	//TODO: add error handling.
 	for idx, rule := range rules {
 		if err := t.addClass(idx, rule); err != nil {
 			return err

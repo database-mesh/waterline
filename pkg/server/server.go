@@ -84,6 +84,7 @@ func (s *Server) Run() error {
 		return err
 	}
 	manager := &manager.Manager{
+		CRI: s.ContainerRuntimeClient,
 		Pod: w,
 		Mgr: mgr,
 	}

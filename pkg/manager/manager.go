@@ -46,11 +46,11 @@ func (m *Manager) WatchAndHandle() error {
 				//TODO: Handle different types of events
 				switch event.Type {
 				case watch.Added:
-					handleAdded(pod, m.Mgr.GetClient())
+					handleAdded(pod, m.Mgr.GetClient(), m.Mgr.CRI)
 				case watch.Modified:
-					handleModified(pod, m.Mgr.GetClient())
+					handleModified(pod, m.Mgr.GetClient(), m.Mgr.CRI)
 				case watch.Deleted:
-					handleDeleted(pod, m.Mgr.GetClient())
+					handleDeleted(pod, m.Mgr.GetClient(), m.Mgr.CRI)
 				}
 			}
 		}
@@ -88,7 +88,7 @@ func (m *Manager) Bootstrap() error {
 	return nil
 }
 
-func handleAdded(pod *corev1.Pod, c client.Client) error {
+func handleAdded(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) error {
 	//TODO: add related rules
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -104,6 +104,29 @@ func handleAdded(pod *corev1.Pod, c client.Client) error {
 		}
 
 		for _, db := range list.Items {
+			var found bool
+			for k, v := range db.Spec.Selector {
+				if pod.Label[k] == v {
+					found = true
+				} else {
+					found = false
+				}
+			}
+
+			if found {
+				l := &bpf.Loader{}
+				containerId := pod.Status.Container
+				pid := cr.GetPidFromContainer(containerId)
+				ifname, err := tc.GetNetworkDeviceFromPid()
+				if err != nil {
+					return err
+				}
+				err = l.Load(ifname, uint16(db.Spec.Server.Port))
+				if err != nil {
+					return err
+				}
+			}
+
 			// TODO: add loader
 			// db.Spec.Server.Port
 			// db.Spec.QoS
@@ -113,11 +136,11 @@ func handleAdded(pod *corev1.Pod, c client.Client) error {
 
 }
 
-func handleModified(pod *corev1.Pod, c client.Client) {
+func handleModified(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) {
 
 }
 
-func handleDeleted(pod *corev1.Pod, c client.Client) {
+func handleDeleted(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) {
 	//TODO: remove related rules
 	// move it to a queue ?
 

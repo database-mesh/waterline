@@ -46,7 +46,7 @@ type VirtualDatabaseSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of VirtualDatabase. Edit virtualdatabase_types.go to remove/update
-	Selector  map[string]string     `json:"selector"`
+	Selector  map[string]string     `json:"selector"` // TODO: Is it needed ? Or is it applied with Endpoints ?
 	Server    VirtualDatabaseServer `json:"server"`
 	QoS       string                `json:"qos"`
 	Bandwidth string                `json:"bandwidth`
