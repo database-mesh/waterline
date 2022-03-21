@@ -17,8 +17,8 @@
 #include <linux/tcp.h>
 #include <arpa/inet.h>
 #include <linux/if_ether.h>
-#include "include/bpf_helpers.h"
-#include "include/bpf_endian.h"
+#include "headers/bpf_helpers.h"
+#include "headers/bpf_endian.h"
 
 struct bpf_map_def SEC("maps") filter_helper = {
     .type = BPF_MAP_TYPE_HASH,
@@ -41,22 +41,33 @@ struct bpf_map_def SEC("maps") jmp_table = {
 	.max_entries = 100,
 };
 
-struct event {
-	__u8 seq;
+struct event_key {
+	 __u8 seq;
     __u16 sport;
     __u16 dport;
     __u32 saddr;
     __u32 daddr;
-	__u32 my_pkt_len;
+};
+
+struct event_value {
 	__u32 payload_offset;
+	__u32 my_pkt_len;
 	__u32 class_id;
 };
 
 struct bpf_map_def SEC("maps") my_pkt = {
 	.type = BPF_MAP_TYPE_HASH,
-	.key_size = sizeof(__u8),
-	.value_size = sizeof(struct event),
-	.max_entries = 1,
+	.key_size = sizeof(struct event_key),
+	.value_size = sizeof(struct event_value),
+	.max_entries = 2048,
+};
+
+// used by tail call
+struct bpf_map_def SEC("maps") tmp_pkt_evt = {
+    .type = BPF_MAP_TYPE_HASH,
+    .key_size = sizeof(__u8),
+    .value_size = sizeof(struct event_key),
+    .max_entries = 1,
 };
 
 struct bpf_map_def SEC("maps") my_pkt_evt = {
@@ -105,29 +116,33 @@ int sql_filter(struct __sk_buff *skb) {
 
     __u32 my_pkt_len = header[0] | header[1] << 8 | header[2] << 16;
 
-    struct event evt;
-	__builtin_memset(&evt, 0, sizeof(event));
-	evt.saddr = iph.saddr;
-	evt.sport = tcph.source,
-	evt.daddr = iph.daddr,
-	evt.dport = tcph.dest,
-	evt.seq = header[3];
-	evt.pkt_len = my_pkt_len;
-	evt.payload_offset = payload_offset;
-	evt.class_id = 0;
+    struct event_key evt_key;
+	__builtin_memset(&evt_key, 0, sizeof(struct event_key));
+	evt_key.saddr = iph.saddr;
+	evt_key.sport = tcph.source,
+	evt_key.daddr = iph.daddr,
+	evt_key.dport = tcph.dest,
+	evt_key.seq = header[3];
 
-    __u8 evt_key = 0;
 
-    bpf_map_update_elem(&my_pkt, &evt_key, &evt, BPF_ANY);
+	struct event_value evt_value;
+	__builtin_memset(&evt_value, 0, sizeof(struct event_value));
+	evt_value.payload_offset = payload_offset;
+	evt_value.my_pkt_len = my_pkt_len;
+	evt_value.class_id = 0;
 
-    struct event evt;
+    bpf_map_update_elem(&my_pkt, &evt_key, &evt_value, BPF_ANY);
+
+    __u8 tmp_key = 0;
+    bpf_map_update_elem(&tmp_pkt_evt, &tmp_key, &evt_key, BPF_ANY);
+
     __u8 b;
     int i = 0;
     __u32 buf_idx = 0;
     #pragma unroll
     for (i = 0; i < 200; i++) {
 	    if (buf_idx == my_pkt_len - 1) {
-    		bpf_ringbuf_output(&my_pkt_evt, &evt, sizeof(evt), 0);
+    		bpf_ringbuf_output(&my_pkt_evt, &evt_key, sizeof(struct event_key), 0);
 		    return -1;
 	    }
     	if (bpf_skb_load_bytes(skb, payload_offset+5+i, &b, sizeof(b)) == 0) {
@@ -144,22 +159,28 @@ int sql_filter(struct __sk_buff *skb) {
 
 SEC("socket_1")
 int sql_filter_1(struct __sk_buff *skb) {
-    __u8 evt_key = 0;
+    __u8 tmp_key = 0;
 
-    struct event *evt = bpf_map_lookup_elem(&my_pkt, &evt_key);
+    struct event_key *tmp_evt_key = bpf_map_lookup_elem(&tmp_pkt_evt, &tmp_key);
 
-    if (!evt) return -1;
+    if (!tmp_key) return -1;
 
+    struct event_value *tmp_value = bpf_map_lookup_elem(&tmp_pkt_evt, &tmp_evt_key);
+
+    if (!tmp_value) return -1;
+
+    __u32 payload_offset = tmp_value->payload_offset;
+    __u32 my_pkt_len = tmp_value->my_pkt_len;
     __u8 b;
     __u32 buf_idx = 200;
     #pragma unroll
     for (int i = 200; i < 2048; i++) {
-        if (buf_idx == *my_pkt_len - 1) {
-            bpf_ringbuf_output(&my_pkt_evt, evt, sizeof(*evt), 0);
+        if (buf_idx == my_pkt_len - 1) {
+            bpf_ringbuf_output(&my_pkt_evt, tmp_value, sizeof(*tmp_value), 0);
             return -1;
         }
 
-    	if (bpf_skb_load_bytes(skb, *payload_offset+5+i, &b, sizeof(b)) == 0) {
+    	if (bpf_skb_load_bytes(skb, payload_offset+5+i, &b, sizeof(b)) == 0) {
 		    if (bpf_map_update_elem(&buf, &buf_idx, &b, BPF_ANY) == 0) {
 			    buf_idx++;
 		    }

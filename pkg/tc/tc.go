@@ -17,6 +17,7 @@ package tc
 import (
 	v1alpha1 "github.com/database-mesh/waterline/api/v1alpha1"
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sort"
 )
@@ -124,4 +125,21 @@ func (t *TcAct) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
 
 	class := netlink.NewHtbClass(attrs, htbclassattrs)
 	return netlink.ClassAdd(class)
+}
+
+func (t *Shaper) AddFilter() error {
+	filterAttrs := netlink.FilterAttrs{
+		LinkIndex: t.link.Attrs().Index,
+		Parent:    netlink.MakeHandle(1, 0),
+		Protocol:  unix.ETH_P_ALL,
+	}
+
+	bpfFilter := netlink.BpfFilter{
+		FilterAttrs:  filterAttrs,
+		ClassId:      netlink.MakeHandle(1, 0),
+		Name:         "tc.o",
+		DirectAction: true,
+	}
+
+	return netlink.FilterAdd(&bpfFilter)
 }
