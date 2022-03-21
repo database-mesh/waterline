@@ -89,6 +89,8 @@ func (s *Server) Run() error {
 	}
 	var eg errgroup.Group
 
+	// mgr.GetClient()
+
 	// apply to Pod
 	eg.Go(func() error {
 		log.Infof("starting controllers")

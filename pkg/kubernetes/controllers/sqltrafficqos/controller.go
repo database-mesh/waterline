@@ -25,6 +25,7 @@ import (
 	"github.com/mlycore/log"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
+	"github.com/database-mesh/waterline/pkg/tc"
 )
 
 // SQLTrafficQoSReconciler reconciles a SQLTrafficQoS object
@@ -51,9 +52,8 @@ func (r *SQLTrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// TODO(user): your logic here
 	obj := &v1alpha1.SQLTrafficQoS{}
-
 	if err := r.Client.Get(ctx, req.NamespacedName, obj); err != nil {
-		log.Errorf("get resources error: %s", err)
+		log.Errorf("get SQLTrafficQos error: %s", err)
 		return ctrl.Result{}, nil
 	}
 
@@ -66,18 +66,20 @@ func (r *SQLTrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Read SQLTrafficQoS for basic QoS class up.
 	// Read VirtualDatabase for application-level QoS after a Pod was scheduled on this Node
 
-	// err := r.SetTcs(ctx, obj)
-	// if err != nil {
-	// return ctrl.Result{Requeue: true}, nil
-	// }
+	shaper, err := tc.NewTcShaper(*obj, "1000M")
+	if err != nil {
+		log.Errorf("get shaper error: %s", err)
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if err = shaper.AddClasses(); err != nil {
+		log.Errorf("add classes error: %s", err)
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	log.Infof("SQLTrafficQoS: %#v", obj)
 
 	return ctrl.Result{}, nil
-}
-
-func (r *SQLTrafficQoSReconciler) SetTcs(ctx context.Context, qos *v1alpha1.SQLTrafficQoS) error {
-	//TODO: add TC operations
-	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
