@@ -49,7 +49,6 @@ func (l *Loader) Load(ifaceName string, port uint16) error {
 	}
 
 	return nil
-}
 
 type Objs struct {
 	Prog         *ebpf.Program `ebpf:"sql_filter"`
@@ -80,7 +79,7 @@ func (l *Loader) LoadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) 
 		return fmt.Errorf("set filter port error: %v", err)
 	}
 
-	sock, err := openRawSock(ifaceName)
+	sock, err := l.OpenRawSock(ifaceName)
 	if err != nil {
 		return err
 	}
@@ -116,7 +115,7 @@ func (l *Loader) LoadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) 
 	return nil
 }
 
-func openRawSock(ifaceName string) (int, error) {
+func (l *Loader) OpenRawSock(ifaceName string) (int, error) {
 	sock, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW|syscall.SOCK_NONBLOCK|syscall.SOCK_CLOEXEC,
 		int(htons(syscall.ETH_P_ALL)))
 	if err != nil {
