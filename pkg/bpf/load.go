@@ -21,6 +21,9 @@ import (
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/mlycore/log"
+	"golang.org/x/sys/unix"
+	"net"
+	"syscall"
 )
 
 const (
@@ -28,13 +31,13 @@ const (
 	TcPktMap   = "/sys/fs/bpf/tc/globals/my_pkt"
 )
 
-func load() error {
-	m, err := loadTcPktMap()
+func Load(ifaceName string, port uint16) error {
+	tcMap, err := loadTcPktMap()
 	if err != nil {
 		return err
 	}
 
-	if err := loadSockFilter(m); err != nil {
+	if err := loadSockFilter(ifaceName, port, tcMap); err != nil {
 		return err
 	}
 
@@ -47,10 +50,11 @@ type Objs struct {
 	FilterHelper *ebpf.Map     `ebpf:"filter_helper"`
 	Buf          *ebpf.Map     `ebpf:"buf"`
 	JmpTable     *ebpf.Map     `ebpf:"jmp_table"`
+	MyPkt        *ebpf.Map     `ebpf:"my_pkt"`
 	MyPktEvt     *ebpf.Map     `ebpf:"my_pkt_evt"`
 }
 
-func loadSockFilter(tcPkt *ebpf.Map) error {
+func loadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) error {
 	spec, err := ebpf.LoadCollectionSpec(SockFilter)
 	if err != nil {
 		return err
@@ -65,6 +69,23 @@ func loadSockFilter(tcPkt *ebpf.Map) error {
 		return fmt.Errorf("jmptable err: %s", err)
 	}
 
+	if err = objs.FilterHelper.Update(uint8(0), port, ebpf.UpdateAny); err != nil {
+		return fmt.Errorf("set filter port error: %v", err)
+	}
+
+	sock, err := openRawSock(ifaceName)
+	if err != nil {
+		return err
+	}
+
+	defer syscall.Close(sock)
+
+	if err := syscall.SetsockoptInt(sock, syscall.SOL_SOCKET, unix.SO_ATTACH_BPF, objs.Prog.FD()); err != nil {
+		return err
+	}
+
+	defer objs.Prog.Close()
+
 	reader, err := ringbuf.NewReader(objs.MyPktEvt)
 	if err != nil {
 		return err
@@ -77,11 +98,38 @@ func loadSockFilter(tcPkt *ebpf.Map) error {
 			continue
 		}
 
-		evt.ClassId = calcQos(query)
-		if err := tcPkt.Update(uint32(0), &evt, ebpf.UpdateAny); err != nil {
+		evt_value := EventValue{
+			ClassId: calcQos(query),
+		}
+
+		if err := tcPkt.Update(&evt, &evt_value, ebpf.UpdateAny); err != nil {
 			log.Warnln(err)
 		}
 	}
+}
+
+func openRawSock(ifaceName string) (int, error) {
+	sock, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW|syscall.SOCK_NONBLOCK|syscall.SOCK_CLOEXEC,
+		int(htons(syscall.ETH_P_ALL)))
+	if err != nil {
+		return -1, err
+	}
+
+	iface, err := net.InterfaceByName(ifaceName)
+	if err != nil {
+		return -1, err
+	}
+
+	sll := syscall.SockaddrLinklayer{
+		Ifindex:  iface.Index,
+		Protocol: htons(syscall.ETH_P_ALL),
+	}
+
+	if err := syscall.Bind(sock, &sll); err != nil {
+		return -1, err
+	}
+
+	return sock, nil
 }
 
 func loadTcPktMap() (*ebpf.Map, error) {
@@ -92,39 +140,47 @@ func calcQos(query string) uint32 {
 	return 0
 }
 
-type Event struct {
-	Seq    uint8
-	Sport  uint16
-	Dport  uint16
-	Saddr  uint32
-	Daddr  uint32
-	PktLen uint32
+type EventKey struct {
+	Seq   uint8
+	Sport uint16
+	Dport uint16
+	Saddr uint32
+	Daddr uint32
+}
+
+type EventValue struct {
 	// tcp payload offset
 	Offset  uint32
+	PktLen  uint32
 	ClassId uint32
 }
 
 // readRecord read record from ringbuf
-func readRecord(objs Objs, reader *ringbuf.Reader) (Event, string, error) {
+func readRecord(objs Objs, reader *ringbuf.Reader) (EventKey, string, error) {
 	record, err := reader.Read()
 	if err != nil {
-		return Event{}, "", fmt.Errorf("reading from reader: %s", err)
+		return EventKey{}, "", fmt.Errorf("reading from reader: %s", err)
 	}
 
-	var evt Event
+	var evt EventKey
 	if err := binary.Read(bytes.NewBuffer(record.RawSample), binary.LittleEndian, &evt); err != nil {
-		return Event{}, "", fmt.Errorf("parsing ringbuf event: %s", err)
+		return EventKey{}, "", fmt.Errorf("parsing ringbuf event: %s", err)
+	}
+
+	var evt_value EventValue
+	if err := objs.MyPkt.Lookup(&evt, &evt_value); err != nil {
+		return EventKey{}, "", fmt.Errorf("read event value: %s", err)
 	}
 
 	var (
 		key     uint32
 		value   uint8
 		entries = objs.Buf.Iterate()
-		chars   = make([]byte, evt.PktLen)
+		chars   = make([]byte, evt_value.PktLen)
 	)
 
 	// PktLen contains COM_TYPE 1byte, so evt.PktLen-1 here
-	for i := 0; i < int(evt.PktLen-1); i++ {
+	for i := 0; i < int(evt_value.PktLen-1); i++ {
 		entries.Next(&key, &value)
 		chars = append(chars, value)
 	}
