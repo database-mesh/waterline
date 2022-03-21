@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
+	"github.com/database-mesh/waterline/pkg/bpf"
 )
 
 // VirtualDatabaseReconciler reconciles a VirtualDatabase object
@@ -56,6 +57,10 @@ func (r *VirtualDatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	defer func() {
 
 	}()
+
+	// TODO: load SockFilter
+	l := &bpf.Loader{}
+	l.Load()
 
 	// pod := &corev1.Pod{}
 	// err := r.Client.Get(ctx, types.NamespacedName{
