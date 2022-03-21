@@ -138,7 +138,7 @@ func (t *Shaper) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
 }
 
 // add qdisc clsact
-func (t *Shaper) addClsact() error {
+func (t *Shaper) addClsAct() error {
 	attrs := netlink.QdiscAttrs{
 		LinkIndex: t.link.Attrs().Index,
 		Handle:    netlink.MakeHandle(0xffff, 0),
@@ -197,7 +197,7 @@ func (t *Shaper) ListClass() ([]netlink.Class, error) {
 	return netlink.ClassList(t.link, netlink.MakeHandle(1, 0))
 }
 
-// AddFilter add bpf filter, default obj name is "tc.o"
+// AddFilter add bpf filter, default obj name is "tc.o", reqired `addClsAct`
 func (t *Shaper) AddFilter() error {
 	filterAttrs := netlink.FilterAttrs{
 		LinkIndex: t.link.Attrs().Index,
