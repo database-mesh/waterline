@@ -51,11 +51,11 @@ func (m *Manager) WatchAndHandle() error {
 				//TODO: Handle different types of events
 				switch event.Type {
 				case watch.Added:
-					handleAdded(pod, m.Mgr.GetClient(), m.Mgr.CRI)
+					handleAdded(pod, m.Mgr.GetClient(), m.CRI)
 				case watch.Modified:
-					handleModified(pod, m.Mgr.GetClient(), m.Mgr.CRI)
+					handleModified(pod, m.Mgr.GetClient(), m.CRI)
 				case watch.Deleted:
-					handleDeleted(pod, m.Mgr.GetClient(), m.Mgr.CRI)
+					handleDeleted(pod, m.Mgr.GetClient(), m.CRI)
 				}
 			}
 		}
