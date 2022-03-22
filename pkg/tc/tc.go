@@ -15,10 +15,11 @@
 package tc
 
 import (
-	"C"
+	// "C"
 	"sort"
 
 	v1alpha1 "github.com/database-mesh/waterline/api/v1alpha1"
+	"github.com/mlycore/log"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -78,10 +79,12 @@ func (t *Shaper) addRootHandle() error {
 
 func (t *Shaper) AddClasses() error {
 	if err := t.addHtbQdisc(); err != nil {
+		log.Errorf("add htb qdisc error: %s", err)
 		return err
 	}
 
 	if err := t.addRootHandle(); err != nil {
+		log.Errorf("add root handle error: %s", err)
 		return err
 	}
 
@@ -94,6 +97,7 @@ func (t *Shaper) AddClasses() error {
 	//TODO: add error handling.
 	for idx, rule := range rules {
 		if err := t.addClass(idx, rule); err != nil {
+			log.Errorf("add class error: %s, rule: %s", err, rule)
 			return err
 		}
 	}
