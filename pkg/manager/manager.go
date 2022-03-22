@@ -141,7 +141,7 @@ func handleAdded(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterf
 		}
 
 	}
-
+	return nil
 }
 
 func handleModified(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) {
