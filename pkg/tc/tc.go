@@ -53,6 +53,7 @@ func (t *Shaper) addHtbQdisc() error {
 	}
 
 	qdisc := netlink.NewHtb(attrs)
+	log.Infof("htb qdisc attrs: %#v, qdisc: %#v", attrs, qdisc)
 	return netlink.QdiscReplace(qdisc)
 }
 
@@ -74,6 +75,7 @@ func (t *Shaper) addRootHandle() error {
 	}
 
 	class := netlink.NewHtbClass(attrs, htbClassAttrs)
+	log.Infof("add root handle attrs: %#v, htbClassAttrs: %#v, qdisc: %#v", attrs, htbClassAttrs, class)
 	return netlink.ClassReplace(class)
 }
 
