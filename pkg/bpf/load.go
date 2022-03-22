@@ -108,7 +108,7 @@ func (l *Loader) LoadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) 
 		}
 
 		evt_value := EventValue{
-			ClassId: l.CalcQos(query),
+			ClassId: l.CalcQoS(query),
 		}
 
 		if err := tcPkt.Update(&evt, &evt_value, ebpf.UpdateAny); err != nil {
