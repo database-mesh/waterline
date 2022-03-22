@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
-	"github.com/database-mesh/waterline/pkg/bpf"
+	// "github.com/database-mesh/waterline/pkg/bpf"
 )
 
 // VirtualDatabaseReconciler reconciles a VirtualDatabase object
