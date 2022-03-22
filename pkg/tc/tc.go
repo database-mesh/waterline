@@ -15,11 +15,13 @@
 package tc
 
 import (
+	"C"
+	"sort"
+
 	v1alpha1 "github.com/database-mesh/waterline/api/v1alpha1"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"sort"
 )
 
 type Shaper struct {

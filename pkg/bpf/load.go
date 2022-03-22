@@ -19,12 +19,14 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"C"
+	"net"
+	"syscall"
+
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/mlycore/log"
 	"golang.org/x/sys/unix"
-	"net"
-	"syscall"
 )
 
 const (
@@ -36,7 +38,7 @@ type Loader struct {
 }
 
 func (l *Loader) Load(ifaceName string, port uint16) error {
-	tcMap, err := loadTcPktMap()
+	tcMap, err := l.LoadTcPkgMap()
 	// TODO: add loader to load this program to net dev
 	// TODO: add port
 
@@ -49,6 +51,7 @@ func (l *Loader) Load(ifaceName string, port uint16) error {
 	}
 
 	return nil
+}
 
 type Objs struct {
 	Prog         *ebpf.Program `ebpf:"sql_filter"`
