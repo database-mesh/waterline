@@ -38,6 +38,7 @@ import (
 type Manager struct {
 	Pod *watcher.PodWatcher
 	Mgr ctrlmgr.Manager
+	CRI cri.ContainerRuntimeInterfaceClient
 }
 
 func (m *Manager) WatchAndHandle() error {
