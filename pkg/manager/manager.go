@@ -17,11 +17,15 @@ package manager
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
+	"github.com/database-mesh/waterline/pkg/bpf"
+	"github.com/database-mesh/waterline/pkg/cri"
 	sqltrafficqos "github.com/database-mesh/waterline/pkg/kubernetes/controllers/sqltrafficqos"
 	virtualdatabase "github.com/database-mesh/waterline/pkg/kubernetes/controllers/virtualdatabase"
 	"github.com/database-mesh/waterline/pkg/kubernetes/watcher"
+	"github.com/database-mesh/waterline/pkg/tc"
 	"github.com/mlycore/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -106,7 +110,7 @@ func handleAdded(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterf
 		for _, db := range list.Items {
 			var found bool
 			for k, v := range db.Spec.Selector {
-				if pod.Label[k] == v {
+				if pod.Labels[k] == v {
 					found = true
 				} else {
 					found = false
@@ -115,9 +119,12 @@ func handleAdded(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterf
 
 			if found {
 				l := &bpf.Loader{}
-				containerId := pod.Status.Container
-				pid := cr.GetPidFromContainer(containerId)
-				ifname, err := tc.GetNetworkDeviceFromPid()
+				containerId := strings.Split(pod.Status.ContainerStatuses[0].ContainerID, "containerd://")[1]
+				pid, err := cr.GetPidFromContainer(context.TODO(), containerId)
+				if err != nil {
+					return err
+				}
+				ifname, err := tc.GetNetworkDeviceFromPid(pid)
 				if err != nil {
 					return err
 				}
