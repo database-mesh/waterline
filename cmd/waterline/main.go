@@ -54,5 +54,7 @@ func main() {
 		log.Fatalf("new server error")
 	}
 
-	s.Run()
+	if err := s.Run(); err != nil {
+		log.Fatalf("server run error: %s", err)
+	}
 }
