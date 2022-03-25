@@ -41,20 +41,20 @@ type TrafficQoSGroup struct {
 	Ceil string `json:"ceil",omitempty`
 }
 
-// SQLTrafficQoSSpec defines the desired state of SQLTrafficQoS
-type SQLTrafficQoSSpec struct {
+// TrafficQoSSpec defines the desired state of TrafficQoS
+type TrafficQoSSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of SQLTrafficQoS. Edit sqltrafficqos_types.go to remove/update
+	// Foo is an example field of TrafficQoS. Edit trafficqos_types.go to remove/update
 	NetworkDevice string             `json:"networkDevice"`
 	QoSClass      QoSClassType       `json:"qosClass,omitempty"`
 	Strategy      TrafficQoSStrategy `json:"strategy",omitempty`
 	Groups        []TrafficQoSGroup  `json:"groups"`
 }
 
-// SQLTrafficQoSStatus defines the observed state of SQLTrafficQoS
-type SQLTrafficQoSStatus struct {
+// TrafficQoSStatus defines the observed state of TrafficQoS
+type TrafficQoSStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -64,24 +64,24 @@ type SQLTrafficQoSStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// SQLTrafficQoS is the Schema for the sqltrafficqos API
-type SQLTrafficQoS struct {
+// TrafficQoS is the Schema for the trafficqos API
+type TrafficQoS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SQLTrafficQoSSpec   `json:"spec,omitempty"`
-	Status SQLTrafficQoSStatus `json:"status,omitempty"`
+	Spec   TrafficQoSSpec   `json:"spec,omitempty"`
+	Status TrafficQoSStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// SQLTrafficQoSList contains a list of SQLTrafficQoS
-type SQLTrafficQoSList struct {
+// TrafficQoSList contains a list of TrafficQoS
+type TrafficQoSList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SQLTrafficQoS `json:"items"`
+	Items           []TrafficQoS `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&SQLTrafficQoS{}, &SQLTrafficQoSList{})
+	SchemeBuilder.Register(&TrafficQoS{}, &TrafficQoSList{})
 }

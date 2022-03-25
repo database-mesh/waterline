@@ -22,9 +22,9 @@ import (
 )
 
 // log is for logging in this package.
-var sqltrafficqoslog = logf.Log.WithName("sqltrafficqos-resource")
+var trafficqoslog = logf.Log.WithName("trafficqos-resource")
 
-func (r *SQLTrafficQoS) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (r *TrafficQoS) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -32,25 +32,25 @@ func (r *SQLTrafficQoS) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
-//+kubebuilder:webhook:path=/mutate-database-mesh-io-database-mesh-io-v1alpha1-sqltrafficqos,mutating=true,failurePolicy=fail,sideEffects=None,groups=database-mesh.io.database-mesh.io,resources=sqltrafficqos,verbs=create;update,versions=v1alpha1,name=msqltrafficqos.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-database-mesh-io-database-mesh-io-v1alpha1-trafficqos,mutating=true,failurePolicy=fail,sideEffects=None,groups=database-mesh.io.database-mesh.io,resources=trafficqos,verbs=create;update,versions=v1alpha1,name=mtrafficqos.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Defaulter = &SQLTrafficQoS{}
+var _ webhook.Defaulter = &TrafficQoS{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *SQLTrafficQoS) Default() {
-	sqltrafficqoslog.Info("default", "name", r.Name)
+func (r *TrafficQoS) Default() {
+	trafficqoslog.Info("default", "name", r.Name)
 
 	// TODO(user): fill in your defaulting logic.
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:path=/validate-database-mesh-io-database-mesh-io-v1alpha1-sqltrafficqos,mutating=false,failurePolicy=fail,sideEffects=None,groups=database-mesh.io.database-mesh.io,resources=sqltrafficqos,verbs=create;update,versions=v1alpha1,name=vsqltrafficqos.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-database-mesh-io-database-mesh-io-v1alpha1-trafficqos,mutating=false,failurePolicy=fail,sideEffects=None,groups=database-mesh.io.database-mesh.io,resources=trafficqos,verbs=create;update,versions=v1alpha1,name=vtrafficqos.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &SQLTrafficQoS{}
+var _ webhook.Validator = &TrafficQoS{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *SQLTrafficQoS) ValidateCreate() error {
-	sqltrafficqoslog.Info("validate create", "name", r.Name)
+func (r *TrafficQoS) ValidateCreate() error {
+	trafficqoslog.Info("validate create", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object creation.
 
@@ -58,16 +58,16 @@ func (r *SQLTrafficQoS) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *SQLTrafficQoS) ValidateUpdate(old runtime.Object) error {
-	sqltrafficqoslog.Info("validate update", "name", r.Name)
+func (r *TrafficQoS) ValidateUpdate(old runtime.Object) error {
+	trafficqoslog.Info("validate update", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object update.
 	return nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *SQLTrafficQoS) ValidateDelete() error {
-	sqltrafficqoslog.Info("validate delete", "name", r.Name)
+func (r *TrafficQoS) ValidateDelete() error {
+	trafficqoslog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
 	return nil
