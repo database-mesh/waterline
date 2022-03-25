@@ -3,4 +3,8 @@ LDFLAGS := "-s -w -X 'github.com/database-mesh/waterline/pkg/vesrion.GitCommit=`
 build:
 	mkdir -p bin
 	go build -ldflags=${LDFLAGS} -o bin/waterline cmd/waterline/main.go
+linux:
+	mkdir -p bin
+	GOOS=linux GOARCH=amd64 go build -ldflags=${LDFLAGS} -o bin/waterline cmd/waterline/main.go
+
 
