@@ -26,12 +26,12 @@ import (
 )
 
 type Shaper struct {
-	qos            v1alpha1.SQLTrafficQoS
+	qos            v1alpha1.TrafficQoS
 	link           netlink.Link
 	totalBandWidth string
 }
 
-func NewTcShaper(qos v1alpha1.SQLTrafficQoS, totalBandWidth string) (*Shaper, error) {
+func NewTcShaper(qos v1alpha1.TrafficQoS, totalBandWidth string) (*Shaper, error) {
 	link, err := netlink.LinkByName(qos.Spec.NetworkDevice)
 	if err != nil {
 		return nil, err

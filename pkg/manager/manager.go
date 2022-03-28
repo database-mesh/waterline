@@ -22,7 +22,8 @@ import (
 	"github.com/database-mesh/waterline/api/v1alpha1"
 	"github.com/database-mesh/waterline/pkg/bpf"
 	"github.com/database-mesh/waterline/pkg/cri"
-	sqltrafficqos "github.com/database-mesh/waterline/pkg/kubernetes/controllers/sqltrafficqos"
+	trafficqos "github.com/database-mesh/waterline/pkg/kubernetes/controllers/trafficqos"
+	trafficqosmapping "github.com/database-mesh/waterline/pkg/kubernetes/controllers/trafficqosmapping"
 	virtualdatabase "github.com/database-mesh/waterline/pkg/kubernetes/controllers/virtualdatabase"
 	"github.com/database-mesh/waterline/pkg/kubernetes/watcher"
 	"github.com/database-mesh/waterline/pkg/tc"
@@ -64,11 +65,19 @@ func (m *Manager) WatchAndHandle() error {
 }
 
 func (m *Manager) Bootstrap() error {
-	if err := (&sqltrafficqos.SQLTrafficQoSReconciler{
+	if err := (&trafficqos.TrafficQoSReconciler{
 		Client: m.Mgr.GetClient(),
 		Scheme: m.Mgr.GetScheme(),
 	}).SetupWithManager(m.Mgr); err != nil {
-		log.Errorf("sqltrafficqos setupWithManager error: %s", err)
+		log.Errorf("trafficqos setupWithManager error: %s", err)
+		return err
+	}
+
+	if err := (&trafficqosmapping.TrafficQoSMappingReconciler{
+		Client: m.Mgr.GetClient(),
+		Scheme: m.Mgr.GetScheme(),
+	}).SetupWithManager(m.Mgr); err != nil {
+		log.Errorf("trafficqosmapping setupWithManager error: %s", err)
 		return err
 	}
 

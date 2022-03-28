@@ -28,8 +28,8 @@ import (
 	"github.com/database-mesh/waterline/pkg/tc"
 )
 
-// SQLTrafficQoSReconciler reconciles a SQLTrafficQoS object
-type SQLTrafficQoSReconciler struct {
+// TrafficQoSMappingReconciler reconciles a TrafficQoSMapping object
+type TrafficQoSMappingReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
@@ -41,29 +41,29 @@ type SQLTrafficQoSReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the SQLTrafficQoS object against the actual cluster state, and then
+// the TrafficQoSMapping object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
-func (r *SQLTrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *TrafficQoSMappingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// _ = log.FromContext(ctx)
 
 	// TODO(user): your logic here
-	obj := &v1alpha1.SQLTrafficQoS{}
+	obj := &v1alpha1.TrafficQoSMapping{}
 	if err := r.Client.Get(ctx, req.NamespacedName, obj); err != nil {
-		log.Errorf("get SQLTrafficQos error: %s", err)
+		log.Errorf("get TrafficQos error: %s", err)
 		return ctrl.Result{}, nil
 	}
 
-	// TODO: sync SQLTrafficQoSStatus
+	// TODO: sync TrafficQoSMappingStatus
 	defer func() {
 
 	}()
 
 	// TODO: add logic, remove VirtualDatabase.
-	// Read SQLTrafficQoS for basic QoS class up.
+	// Read TrafficQoSMapping for basic QoS class up.
 	// Read VirtualDatabase for application-level QoS after a Pod was scheduled on this Node
 
 	//TODO: all rules should be removed once the resource was deleted
@@ -80,14 +80,14 @@ func (r *SQLTrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	log.Infof("SQLTrafficQoS: %#v", obj)
+	log.Infof("TrafficQoSMapping: %#v", obj)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SQLTrafficQoSReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *TrafficQoSMappingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.SQLTrafficQoS{}).
+		For(&v1alpha1.TrafficQoSMapping{}).
 		Complete(r)
 }
