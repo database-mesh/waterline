@@ -138,10 +138,12 @@ func handleAdded(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterf
 				if err != nil {
 					return err
 				}
+				// Add veth egress
 				err = l.Load(ifname, uint16(db.Spec.Server.Port))
 				if err != nil {
 					return err
 				}
+
 			}
 
 			// TODO: add loader

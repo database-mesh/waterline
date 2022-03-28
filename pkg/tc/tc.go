@@ -80,7 +80,7 @@ func (t *Shaper) addRootHandle() error {
 	return netlink.ClassReplace(class)
 }
 
-func (t *Shaper) AddClasses() error {
+func (t *Shaper) AddClasses() ([]int, error) {
 	err := t.addHtbQdisc()
 	if err != nil && !strings.Contains(err.Error(), "invalid argument") {
 		log.Errorf("add htb qdisc error: %s", err)

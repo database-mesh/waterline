@@ -60,6 +60,9 @@ func (r *VirtualDatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	}()
 
+	//TODO: add tc class argument
+	//TODO: read mapping
+
 	// TODO: load SockFilter
 	// l := &bpf.Loader{}
 	// l.Load()

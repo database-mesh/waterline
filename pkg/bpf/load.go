@@ -146,6 +146,7 @@ func (l *Loader) LoadTcPkgMap() (*ebpf.Map, error) {
 	return ebpf.LoadPinnedMap(TcPktMap, nil)
 }
 func (l *Loader) CalcQoS(query string) uint32 {
+	//TODO: virtual database tc argument
 	return 0
 }
 

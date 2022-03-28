@@ -69,6 +69,8 @@ func (r *TrafficQoSReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	//TODO: all rules should be removed once the resource was deleted
 	//TODO: is there an exception when more than one resource was created
 
+	//TODO: add check for existed class rules
+
 	shaper, err := tc.NewTcShaper(*obj, "1000M")
 	if err != nil {
 		log.Errorf("get shaper error: %s", err)
