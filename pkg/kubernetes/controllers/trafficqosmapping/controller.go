@@ -25,7 +25,6 @@ import (
 	"github.com/mlycore/log"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
-	"github.com/database-mesh/waterline/pkg/tc"
 )
 
 // TrafficQoSMappingReconciler reconciles a TrafficQoSMapping object
@@ -68,17 +67,6 @@ func (r *TrafficQoSMappingReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	//TODO: all rules should be removed once the resource was deleted
 	//TODO: is there an exception when more than one resource was created
-
-	shaper, err := tc.NewTcShaper(*obj, "1000M")
-	if err != nil {
-		log.Errorf("get shaper error: %s", err)
-		return ctrl.Result{Requeue: true}, nil
-	}
-
-	if err = shaper.AddClasses(); err != nil {
-		log.Errorf("add classes error: %s", err)
-		return ctrl.Result{Requeue: true}, nil
-	}
 
 	log.Infof("TrafficQoSMapping: %#v", obj)
 
