@@ -12,9 +12,9 @@ spec:
   names:
     kind: TrafficQoSMapping
     listKind: TrafficQoSMappingList
-    plural: trafficqosmappings
+    plural: trafficqosmapping
     singular: trafficqosmapping
-  # scope: Namespaced
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
@@ -37,7 +37,7 @@ spec:
             description: TrafficQoSMappingSpec defines the desired state of TrafficQoSMapping
             properties:
               references:
-                type: map
+                type: object 
             required:
             - references 
             type: object
