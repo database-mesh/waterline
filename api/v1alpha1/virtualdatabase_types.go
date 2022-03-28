@@ -49,15 +49,15 @@ type VirtualDatabaseSpec struct {
 	Selector  map[string]string     `json:"selector"` // TODO: Is it needed ? Or is it applied with Endpoints ?
 	Server    VirtualDatabaseServer `json:"server"`
 	QoS       string                `json:"qos"`
-	Bandwidth string                `json:"bandwidth`
+	Bandwidth string                `json:"bandwidth"`
 }
 
 // VirtualDatabaseStatus defines the observed state of VirtualDatabase
 type VirtualDatabaseStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	PodList            []string `json:"podList"`
-	ObservedGeneration int64    `json:"observedGeneration,omitempty"`
+	ClassInfo          string `json:"classInfo"`
+	ObservedGeneration int64  `json:"observedGeneration,omitempty"`
 }
 
 type Pod string
