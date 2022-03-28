@@ -99,9 +99,24 @@ func (t *Shaper) AddClasses() error {
 		return rules[i].Rate < rules[j].Rate
 	})
 
+	classes, err := t.ListClass()
+	if err != nil {
+		log.Errorf("list class error: %s", err)
+		return err
+	}
+
+	var base uint16
+	for _, c := range classes {
+		// c.Attrs().Handle
+		_, minor := netlink.MajorMinor(c.Attrs().Handle)
+		if base < minor {
+			base = minor
+		}
+	}
+
 	//TODO: add error handling.
 	for idx, rule := range rules {
-		if err := t.addClass(idx, rule); err != nil {
+		if err := t.addClass(uint16(idx)+base, rule); err != nil {
 			log.Errorf("add class error: %s, rule: %s", err, rule)
 			return err
 		}
@@ -111,12 +126,12 @@ func (t *Shaper) AddClasses() error {
 }
 
 // add htb class
-func (t *Shaper) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
+func (t *Shaper) addClass(idx uint16, rule v1alpha1.TrafficQoSGroup) error {
 	attrs := netlink.ClassAttrs{
 		LinkIndex: t.link.Attrs().Index,
 		Parent:    netlink.MakeHandle(1, 1),
 		//exclude 0, 1
-		Handle: netlink.MakeHandle(1, uint16(idx+2)),
+		Handle: netlink.MakeHandle(1, idx+2),
 	}
 
 	rateValue, err := resource.ParseQuantity(rule.Rate)
