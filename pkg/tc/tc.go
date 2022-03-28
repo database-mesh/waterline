@@ -17,6 +17,7 @@ package tc
 import (
 	// "C"
 	"sort"
+	"strings"
 
 	v1alpha1 "github.com/database-mesh/waterline/api/v1alpha1"
 	"github.com/mlycore/log"
@@ -80,12 +81,14 @@ func (t *Shaper) addRootHandle() error {
 }
 
 func (t *Shaper) AddClasses() error {
-	if err := t.addHtbQdisc(); err != nil {
+	err := t.addHtbQdisc()
+	if err != nil && !strings.Contains(err.Error(), "invalid argument") {
 		log.Errorf("add htb qdisc error: %s", err)
 		return err
 	}
 
-	if err := t.addRootHandle(); err != nil {
+	err = t.addRootHandle()
+	if err != nil && !strings.Contains(err.Error(), "invalid argument") {
 		log.Errorf("add root handle error: %s", err)
 		return err
 	}
