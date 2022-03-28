@@ -131,7 +131,7 @@ func (t *Shaper) addClass(idx uint16, rule v1alpha1.TrafficQoSGroup) error {
 		LinkIndex: t.link.Attrs().Index,
 		Parent:    netlink.MakeHandle(1, 1),
 		//exclude 0, 1
-		Handle: netlink.MakeHandle(1, idx+2),
+		Handle: netlink.MakeHandle(1, idx+1),
 	}
 
 	rateValue, err := resource.ParseQuantity(rule.Rate)
