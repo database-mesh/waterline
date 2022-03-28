@@ -19,7 +19,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"C"
+	// "C"
 	"net"
 	"syscall"
 
