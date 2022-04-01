@@ -15,12 +15,23 @@
 package manager
 
 import (
-	sqltrafficqos "github.com/database-mesh/waterline/pkg/kubernetes/controllers/sqltrafficqos"
+	"context"
+	"os"
+	"strings"
+
+	"github.com/database-mesh/waterline/api/v1alpha1"
+	"github.com/database-mesh/waterline/pkg/bpf"
+	"github.com/database-mesh/waterline/pkg/cri"
+	trafficqos "github.com/database-mesh/waterline/pkg/kubernetes/controllers/trafficqos"
+	trafficqosmapping "github.com/database-mesh/waterline/pkg/kubernetes/controllers/trafficqosmapping"
 	virtualdatabase "github.com/database-mesh/waterline/pkg/kubernetes/controllers/virtualdatabase"
 	"github.com/database-mesh/waterline/pkg/kubernetes/watcher"
+	"github.com/database-mesh/waterline/pkg/tc"
 	"github.com/mlycore/log"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrlmgr "sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -28,6 +39,7 @@ import (
 type Manager struct {
 	Pod *watcher.PodWatcher
 	Mgr ctrlmgr.Manager
+	CRI cri.ContainerRuntimeInterfaceClient
 }
 
 func (m *Manager) WatchAndHandle() error {
@@ -35,8 +47,17 @@ func (m *Manager) WatchAndHandle() error {
 		select {
 		case event := <-m.Pod.Core.ResultChan():
 			{
+				pod := event.Object.(*corev1.Pod)
 				log.Infof("[%s] pod event: %#v", event.Type, event.Object.(*corev1.Pod).Name)
 				//TODO: Handle different types of events
+				switch event.Type {
+				case watch.Added:
+					handleAdded(pod, m.Mgr.GetClient(), m.CRI)
+				case watch.Modified:
+					handleModified(pod, m.Mgr.GetClient(), m.CRI)
+				case watch.Deleted:
+					handleDeleted(pod, m.Mgr.GetClient(), m.CRI)
+				}
 			}
 		}
 	}
@@ -44,11 +65,19 @@ func (m *Manager) WatchAndHandle() error {
 }
 
 func (m *Manager) Bootstrap() error {
-	if err := (&sqltrafficqos.SQLTrafficQoSReconciler{
+	if err := (&trafficqos.TrafficQoSReconciler{
 		Client: m.Mgr.GetClient(),
 		Scheme: m.Mgr.GetScheme(),
 	}).SetupWithManager(m.Mgr); err != nil {
-		log.Errorf("sqltrafficqos setupWithManager error: %s", err)
+		log.Errorf("trafficqos setupWithManager error: %s", err)
+		return err
+	}
+
+	if err := (&trafficqosmapping.TrafficQoSMappingReconciler{
+		Client: m.Mgr.GetClient(),
+		Scheme: m.Mgr.GetScheme(),
+	}).SetupWithManager(m.Mgr); err != nil {
+		log.Errorf("trafficqosmapping setupWithManager error: %s", err)
 		return err
 	}
 
@@ -71,4 +100,67 @@ func (m *Manager) Bootstrap() error {
 		return err
 	}
 	return nil
+}
+
+func handleAdded(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) error {
+	//TODO: add related rules
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
+	if hostname == pod.Spec.Hostname {
+		list := &v1alpha1.VirtualDatabaseList{Items: []v1alpha1.VirtualDatabase{}}
+
+		if err := c.List(context.TODO(), list, &client.ListOptions{Namespace: pod.Namespace}); err != nil {
+			log.Errorf("get SQLTrafficQos error: %s", err)
+			return err
+		}
+
+		for _, db := range list.Items {
+			var found bool
+			for k, v := range db.Spec.Selector {
+				if pod.Labels[k] == v {
+					found = true
+				} else {
+					found = false
+				}
+			}
+
+			if found {
+				l := &bpf.Loader{}
+				containerId := strings.Split(pod.Status.ContainerStatuses[0].ContainerID, "containerd://")[1]
+				pid, err := cr.GetPidFromContainer(context.TODO(), containerId)
+				if err != nil {
+					return err
+				}
+				ifname, err := tc.GetNetworkDeviceFromPid(pid)
+				if err != nil {
+					return err
+				}
+				// Add veth egress
+				err = l.Load(ifname, uint16(db.Spec.Server.Port))
+				if err != nil {
+					return err
+				}
+
+			}
+
+			// TODO: add loader
+			// db.Spec.Server.Port
+			// db.Spec.QoS
+		}
+
+	}
+	return nil
+}
+
+func handleModified(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) {
+
+}
+
+func handleDeleted(pod *corev1.Pod, c client.Client, cr cri.ContainerRuntimeInterfaceClient) {
+	//TODO: remove related rules
+	// move it to a queue ?
+
 }

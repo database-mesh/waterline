@@ -18,12 +18,15 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+
+	// "C"
+	"net"
+	"syscall"
+
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/ringbuf"
 	"github.com/mlycore/log"
 	"golang.org/x/sys/unix"
-	"net"
-	"syscall"
 )
 
 const (
@@ -31,13 +34,19 @@ const (
 	TcPktMap   = "/sys/fs/bpf/tc/globals/my_pkt"
 )
 
-func Load(ifaceName string, port uint16) error {
-	tcMap, err := loadTcPktMap()
+type Loader struct {
+}
+
+func (l *Loader) Load(ifaceName string, port uint16) error {
+	tcMap, err := l.LoadTcPkgMap()
+	// TODO: add loader to load this program to net dev
+	// TODO: add port
+
 	if err != nil {
 		return err
 	}
 
-	if err := loadSockFilter(ifaceName, port, tcMap); err != nil {
+	if err := l.LoadSockFilter(ifaceName, port, tcMap); err != nil {
 		return err
 	}
 
@@ -54,7 +63,7 @@ type Objs struct {
 	MyPktEvt     *ebpf.Map     `ebpf:"my_pkt_evt"`
 }
 
-func loadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) error {
+func (l *Loader) LoadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) error {
 	spec, err := ebpf.LoadCollectionSpec(SockFilter)
 	if err != nil {
 		return err
@@ -73,7 +82,7 @@ func loadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) error {
 		return fmt.Errorf("set filter port error: %v", err)
 	}
 
-	sock, err := openRawSock(ifaceName)
+	sock, err := l.OpenRawSock(ifaceName)
 	if err != nil {
 		return err
 	}
@@ -92,23 +101,24 @@ func loadSockFilter(ifaceName string, port uint16, tcPkt *ebpf.Map) error {
 	}
 
 	for {
-		evt, query, err := readRecord(objs, reader)
+		evt, query, err := l.ReadRecord(objs, reader)
 		if err != nil {
 			log.Warnln(err)
 			continue
 		}
 
 		evt_value := EventValue{
-			ClassId: calcQos(query),
+			ClassId: l.CalcQoS(query),
 		}
 
 		if err := tcPkt.Update(&evt, &evt_value, ebpf.UpdateAny); err != nil {
 			log.Warnln(err)
 		}
 	}
+	return nil
 }
 
-func openRawSock(ifaceName string) (int, error) {
+func (l *Loader) OpenRawSock(ifaceName string) (int, error) {
 	sock, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW|syscall.SOCK_NONBLOCK|syscall.SOCK_CLOEXEC,
 		int(htons(syscall.ETH_P_ALL)))
 	if err != nil {
@@ -132,11 +142,11 @@ func openRawSock(ifaceName string) (int, error) {
 	return sock, nil
 }
 
-func loadTcPktMap() (*ebpf.Map, error) {
+func (l *Loader) LoadTcPkgMap() (*ebpf.Map, error) {
 	return ebpf.LoadPinnedMap(TcPktMap, nil)
 }
-
-func calcQos(query string) uint32 {
+func (l *Loader) CalcQoS(query string) uint32 {
+	//TODO: virtual database tc argument
 	return 0
 }
 
@@ -156,7 +166,7 @@ type EventValue struct {
 }
 
 // readRecord read record from ringbuf
-func readRecord(objs Objs, reader *ringbuf.Reader) (EventKey, string, error) {
+func (l *Loader) ReadRecord(objs Objs, reader *ringbuf.Reader) (EventKey, string, error) {
 	record, err := reader.Read()
 	if err != nil {
 		return EventKey{}, "", fmt.Errorf("reading from reader: %s", err)

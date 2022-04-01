@@ -21,40 +21,20 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-type QoSClassType string
-
-const (
-	QoSClassGuaranteed QoSClassType = "Guaranteed"
-	QoSClassBurstable  QoSClassType = "Burstable"
-	QoSClassBestEffort QoSClassType = "BestEffort"
-)
-
-type TrafficQoSStrategy string
-
-const (
-	TrafficQoSStrategyDynamic    TrafficQoSStrategy = "Dynamic"
-	TrafficQoSStrategyPreDefined TrafficQoSStrategy = "PreDefined"
-)
-
-type TrafficQoSGroup struct {
-	Rate string `json:"rate"`
-	Ceil string `json:"ceil",omitempty`
-}
-
-// SQLTrafficQoSSpec defines the desired state of SQLTrafficQoS
-type SQLTrafficQoSSpec struct {
+// TrafficQoSMappingSpec defines the desired state of TrafficQoSMapping
+type TrafficQoSMappingSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of SQLTrafficQoS. Edit sqltrafficqos_types.go to remove/update
-	NetworkDevice string             `json:"networkDevice"`
-	QoSClass      QoSClassType       `json:"qosClass,omitempty"`
-	Strategy      TrafficQoSStrategy `json:"strategy",omitempty`
-	Groups        []TrafficQoSGroup  `json:"groups"`
+	// Foo is an example field of TrafficQoSMapping. Edit trafficqos_types.go to remove/update
+	References map[string]string `json:"references`
+
+	//
+	// 1:1 <- virtualdatabase namespace / name
 }
 
-// SQLTrafficQoSStatus defines the observed state of SQLTrafficQoS
-type SQLTrafficQoSStatus struct {
+// TrafficQoSMappingStatus defines the observed state of TrafficQoSMapping
+type TrafficQoSMappingStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -64,24 +44,23 @@ type SQLTrafficQoSStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// SQLTrafficQoS is the Schema for the sqltrafficqos API
-type SQLTrafficQoS struct {
+// TrafficQoSMapping is the Schema for the trafficqos API
+type TrafficQoSMapping struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SQLTrafficQoSSpec   `json:"spec,omitempty"`
-	Status SQLTrafficQoSStatus `json:"status,omitempty"`
+	Spec TrafficQoSMappingSpec `json:"spec,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// SQLTrafficQoSList contains a list of SQLTrafficQoS
-type SQLTrafficQoSList struct {
+// TrafficQoSMappingList contains a list of TrafficQoSMapping
+type TrafficQoSMappingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SQLTrafficQoS `json:"items"`
+	Items           []TrafficQoSMapping `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&SQLTrafficQoS{}, &SQLTrafficQoSList{})
+	SchemeBuilder.Register(&TrafficQoSMapping{}, &TrafficQoSMappingList{})
 }

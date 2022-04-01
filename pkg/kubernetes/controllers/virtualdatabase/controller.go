@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/database-mesh/waterline/api/v1alpha1"
+	// "github.com/database-mesh/waterline/pkg/bpf"
 )
 
 // VirtualDatabaseReconciler reconciles a VirtualDatabase object
@@ -46,6 +47,8 @@ type VirtualDatabaseReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *VirtualDatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// TODO(user): your logic here
+	// TODO: all rules should be removed once the resource was deleted
+	// however the rules were applied with the Pod scheduled
 	obj := &v1alpha1.VirtualDatabase{}
 
 	if err := r.Client.Get(ctx, req.NamespacedName, obj); err != nil {
@@ -56,6 +59,13 @@ func (r *VirtualDatabaseReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	defer func() {
 
 	}()
+
+	//TODO: add tc class argument
+	//TODO: read mapping
+
+	// TODO: load SockFilter
+	// l := &bpf.Loader{}
+	// l.Load()
 
 	// pod := &corev1.Pod{}
 	// err := r.Client.Get(ctx, types.NamespacedName{

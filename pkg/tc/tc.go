@@ -15,20 +15,24 @@
 package tc
 
 import (
+	// "C"
+	"sort"
+	"strings"
+
 	v1alpha1 "github.com/database-mesh/waterline/api/v1alpha1"
+	"github.com/mlycore/log"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"sort"
 )
 
 type Shaper struct {
-	qos            v1alpha1.SQLTrafficQoS
+	qos            v1alpha1.TrafficQoS
 	link           netlink.Link
 	totalBandWidth string
 }
 
-func NewTcShaper(qos v1alpha1.SQLTrafficQoS, totalBandWidth string) (*Shaper, error) {
+func NewTcShaper(qos v1alpha1.TrafficQoS, totalBandWidth string) (*Shaper, error) {
 	link, err := netlink.LinkByName(qos.Spec.NetworkDevice)
 	if err != nil {
 		return nil, err
@@ -50,6 +54,7 @@ func (t *Shaper) addHtbQdisc() error {
 	}
 
 	qdisc := netlink.NewHtb(attrs)
+	log.Infof("htb qdisc attrs: %#v, qdisc: %#v", attrs, qdisc)
 	return netlink.QdiscReplace(qdisc)
 }
 
@@ -71,15 +76,20 @@ func (t *Shaper) addRootHandle() error {
 	}
 
 	class := netlink.NewHtbClass(attrs, htbClassAttrs)
+	log.Infof("add root handle attrs: %#v, htbClassAttrs: %#v, qdisc: %#v", attrs, htbClassAttrs, class)
 	return netlink.ClassReplace(class)
 }
 
-func (t *Shaper) AddClasses() error {
-	if err := t.addHtbQdisc(); err != nil {
+func (t *Shaper) AddClasses() ([]int, error) {
+	err := t.addHtbQdisc()
+	if err != nil && !strings.Contains(err.Error(), "invalid argument") {
+		log.Errorf("add htb qdisc error: %s", err)
 		return err
 	}
 
-	if err := t.addRootHandle(); err != nil {
+	err = t.addRootHandle()
+	if err != nil && !strings.Contains(err.Error(), "invalid argument") {
+		log.Errorf("add root handle error: %s", err)
 		return err
 	}
 
@@ -89,8 +99,25 @@ func (t *Shaper) AddClasses() error {
 		return rules[i].Rate < rules[j].Rate
 	})
 
+	classes, err := t.ListClass()
+	if err != nil {
+		log.Errorf("list class error: %s", err)
+		return err
+	}
+
+	var base uint16
+	for _, c := range classes {
+		// c.Attrs().Handle
+		_, minor := netlink.MajorMinor(c.Attrs().Handle)
+		if base < minor {
+			base = minor
+		}
+	}
+
+	//TODO: add error handling.
 	for idx, rule := range rules {
-		if err := t.addClass(idx, rule); err != nil {
+		if err := t.addClass(uint16(idx)+base, rule); err != nil {
+			log.Errorf("add class error: %s, rule: %s", err, rule)
 			return err
 		}
 	}
@@ -99,12 +126,12 @@ func (t *Shaper) AddClasses() error {
 }
 
 // add htb class
-func (t *Shaper) addClass(idx int, rule v1alpha1.TrafficQoSGroup) error {
+func (t *Shaper) addClass(idx uint16, rule v1alpha1.TrafficQoSGroup) error {
 	attrs := netlink.ClassAttrs{
 		LinkIndex: t.link.Attrs().Index,
 		Parent:    netlink.MakeHandle(1, 1),
 		//exclude 0, 1
-		Handle: netlink.MakeHandle(1, uint16(idx+2)),
+		Handle: netlink.MakeHandle(1, idx+1),
 	}
 
 	rateValue, err := resource.ParseQuantity(rule.Rate)

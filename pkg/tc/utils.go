@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-func getNetworkDeviceFromPid(pid uint32) (string, error) {
+func GetNetworkDeviceFromPid(pid uint32) (string, error) {
 	igmpArgs := []string{
 		fmt.Sprintf("/proc/%d/net/igmp", pid),
 	}
