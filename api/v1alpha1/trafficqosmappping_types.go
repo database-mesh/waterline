@@ -28,6 +28,9 @@ type TrafficQoSMappingSpec struct {
 
 	// Foo is an example field of TrafficQoSMapping. Edit trafficqos_types.go to remove/update
 	References map[string]string `json:"references`
+
+	//
+	// 1:1 <- virtualdatabase namespace / name
 }
 
 // TrafficQoSMappingStatus defines the observed state of TrafficQoSMapping
